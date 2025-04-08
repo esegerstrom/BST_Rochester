@@ -8,7 +8,7 @@ To run the 3ph power flow solver in Julia:
         b. Press "]" to enter package manager
         c. Run "activate ." to activate environment
         d. Run "instantiate" to add required Julia packages
-    4. Run solve_3ph_pf.jl to solve the 3-phase power flow using JuMP
+    4. Run Opt_Tools/solve_3ph_pf.jl to solve the 3-phase power flow using JuMP
 
 (Not required for demo) To set up a HELICS co-simulation (GridLAB-D+AMI Data) or change AMI input data (dates or load power factor):
     1. Create a Python virtual environment in this folder and activate it (Optional, but highly recommended) 
@@ -17,5 +17,5 @@ To run the 3ph power flow solver in Julia:
             1. On Windows: "venv\Scripts\activate"
             2. On Linux/macOS: "source venv/bin/activate"
     3. Install required Python packages
-        a. pip install -r requirements.txt
+        a. pip install -r py_reqs.txt
     4. Run setup_cosim.py script in Python with desired settings
