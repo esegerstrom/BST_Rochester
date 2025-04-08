@@ -1,8 +1,6 @@
 To run the 3ph power flow solver in Julia:
     1. Clone this repo into local directory
-    2. Follow the instructions in the Word doc (attached to email from Dakota) 
-       to copy the input data from folder /netfiles/nest-vt-fs1/data_for_MAPLE_BST_Demo/Feeder_Data (on server)
-       into your local copy of this repo
+    2. Follow the instructions in the Word doc to copy the input data from folder /netfiles/nest-vt-fs1/data_for_MAPLE_BST_Demo/Feeder_Data (on server) into your local copy of this repo. NOTE: this step can take a few minutes.
     3. Setup Julia packages
         a. Open Julia REPL
         b. Press "]" to enter package manager
