@@ -1,0 +1,18 @@
+{
+    "coreInit": "--federates=1",
+    "coreName": "AMI Player Federate",
+    "coreType": "zmq",
+    "name": "AMIPlayerFed",
+    "offset": 0.0,
+    "period": 3600,
+    "logfile": "Feeder_Data/Feeder_Name/Output_Data/Log_Files/AMIPlayerFed.log",
+    "log_level": "warning",
+    "uninterruptible": true,
+    "publications": [
+        {
+        "key": "AMIPlayerFed/ami_load",
+        "type": "string",
+        "global": true
+        }
+    ]
+}

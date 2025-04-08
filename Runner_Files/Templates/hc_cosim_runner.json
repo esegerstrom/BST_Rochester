@@ -1,0 +1,18 @@
+{
+    "broker": true,
+    "federates":[
+        {
+            "directory":"../..",
+            "exec":"python AMI_Player_Tools/hc_ami_cosim_fed.py Feeder_Name \"Start_Time\" \"End_Time\" Load_Fixed_PF",
+            "host":"localhost",
+            "name":"AMI Player Federate"
+        },
+        {
+            "directory":"../..",
+            "exec":"gridlabd Feeder_Data/Feeder_Name/Input_Data/Feeder_Name_Helics_Mod.glm",
+            "host":"localhost",
+            "name":"GridLAB-D Federate"
+        }
+    ],
+    "name":"HELICS Co-simulation Runner"
+}

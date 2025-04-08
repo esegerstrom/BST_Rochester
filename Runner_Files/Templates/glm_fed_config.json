@@ -1,0 +1,20 @@
+  {
+    "coreInit": "--federates=1",
+    "coreName": "Distribution Federate",
+    "coreType": "zmq",
+    "name": "DistributionSim",
+    "offset": 0.0,
+    "period": 3600,
+    "logfile": "Feeder_Data/Feeder_Name/Output_Data/Log_Files/DistributionSim.log",
+    "log_level": "warning",
+    "inputs": [
+    {
+      "type": "string",
+      "target": "AMIPlayerFed/ami_load",
+      "info" : 
+      {
+        "message_type": "JSON"
+      }
+    }
+   ]
+}
