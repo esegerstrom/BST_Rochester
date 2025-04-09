@@ -6,7 +6,7 @@ using ColorTypes
 using Colors
 using JuMP
 using Ipopt
-import HSL_jll
+# import HSL_jll
 using LinearAlgebra
 using CSV
 using DataFrames
@@ -126,7 +126,7 @@ V0_ref = V0_mag*[1,exp(-im*2*pi/3),exp(im*2*pi/3)]
 t_start = 1
 t_end = 169
 n_times = t_end-t_start+1
-linear_solver = "ma27"
+linear_solver = "mumps"
 Vph_out = Array{ComplexF64}(undef, 3, n_nodes, n_times)
 Ssub_out = Array{ComplexF64}(undef, 3, n_times)
 for t_ind in t_start:t_end

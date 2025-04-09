@@ -6,7 +6,7 @@ using ColorTypes
 using Colors
 using JuMP
 using Ipopt
-import HSL_jll
+# import HSL_jll
 using LinearAlgebra
 using CSV
 using DataFrames
