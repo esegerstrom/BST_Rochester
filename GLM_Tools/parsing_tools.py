@@ -7,6 +7,7 @@ import numpy as np
 import GLM_Tools.PowerSystemModel as psm
 import pickle
 import matplotlib.pyplot as plt
+import warnings
 
 def parse_node(node_string):
 
@@ -88,7 +89,7 @@ def parse_branch(branch_type,branch_string):
         branch_params.append(length)
 
     if branch_type in ["fuse"]:
-        current_limit_match = re.search(r"current_limit\s+(\d+(\.\d+)?);", branch_string, re.S)
+        current_limit_match = re.search(r"current_limit\s+(\d+(\.\d+)?)(\s?A)?;", branch_string, re.S)
         if current_limit_match:
             current_limit = float(current_limit_match.group(1))
         else:
@@ -303,7 +304,9 @@ def parse_config(config_type,config_string):
             if z_match:
                 z = complex(z_match.group(1))
             else:
-                raise ValueError(f"Could not find z{z_str} of line config object: {config_string}")
+                z = complex(1e-4,1e-4)
+                warnings.warn("WARNING: Need to implement conductor and line spacing parsing!")
+                # raise ValueError(f"Could not find z{z_str} of line config object: {config_string}")
             config_params.append(z)
 
     elif config_type in ["transformer_configuration"]:
@@ -483,11 +486,11 @@ def parse_glm_to_pkl(substation_name):
     for obj in re.finditer(r"object (\S*) \{[^{}]*\}", glm_data, re.S):
         objects.append(obj.group(0))
         obj_type = obj.group(1).strip('"')
-        if obj_type == "node":
+        if obj_type in ["node","meter"]:
             node_string = obj.group(0)
             node_objs.append(node_string)
             Nodes.append(parse_node(node_string))
-        elif obj_type in ["overhead_line", "underground_line", "transformer", "fuse", "switch", "recloser", "regulator"]:
+        elif obj_type in ["overhead_line", "underground_line", "transformer", "fuse", "switch", "sectionalizer", "recloser", "regulator"]:
             branch_string = obj.group(0)
             branch_objs.append(branch_string)
             Branches.append(parse_branch(obj_type,branch_string))
@@ -713,8 +716,14 @@ def add_coords_to_pkl(substation_name):
         branch = pkl_model.Branches[branch_ind]
         from_node = pkl_model.Nodes[branch.from_node_ind]
         to_node = pkl_model.Nodes[branch.to_node_ind]
-        branch.X_coord = to_node.X_coord
-        branch.Y_coord = to_node.Y_coord
+        if hasattr(to_node,'X_coord'):
+            branch.X_coord = to_node.X_coord
+            branch.Y_coord = to_node.Y_coord
+        else:
+            branch.X_coord = from_node.X_coord
+            branch.Y_coord = from_node.Y_coord
+            to_node.X_coord = branch.X_coord
+            to_node.Y_coord = branch.Y_coord
         branch.X2_coord = from_node.X_coord
         branch.Y2_coord = from_node.Y_coord
 

@@ -189,9 +189,22 @@ class PowerSystemModel:
                     branch.B_br = np.dot(branch.A_br,branch.Z_pu_3ph)
                     branch.C_br = np.zeros(3)
                     branch.D_br = np.array([[1,-1,0],[0,1,-1],[-1,0,1]])/np.sqrt(3)
+                elif branch_config.connect_type in ["DELTA_DELTA"]:
+                    if branch.phases == 'ABCD':
+                        branch.A_br = np.array([[2,-1,-1],[-1,2,-1],[-1,-1,2]])/3
+                        branch.B_br = complex(r_pu,x_pu)/3*np.array([[1,0,0],[0,1,0],[-1,-1,0]])
+                        branch.C_br = np.zeros(3)
+                        branch.D_br = np.eye(3)
+                    elif branch.phases == 'BCD':
+                        branch.A_br = np.array([[2,-1,-1],[-1,2,-1],[-1,-1,2]])/3
+                        branch.B_br = complex(r_pu,x_pu)/3*np.array([[0,-0.5,0.5],[0,-1,1],[0,0,0]])
+                        branch.C_br = np.zeros(3)
+                        branch.D_br = np.array([[0,0,0],[0,1,0],[0,0,1]])
+                    else:
+                        raise ValueError(f"Connection type {branch_config.connect_type} with phases {branch.phases} not yet supported for branch {branch.name}.")
                 else:
                     raise ValueError(f"Connection type {branch_config.connect_type} not yet supported for branch {branch.name}.")
-            if branch.type in ["fuse", "switch", "recloser", "regulator"]:
+            if branch.type in ["fuse", "switch", "sectionalizer", "recloser", "regulator"]:
                 branch.Z_ohms_3ph = np.zeros((3,3),dtype=complex)
                 for ph in branch.phases:
                     if ph == 'A':
