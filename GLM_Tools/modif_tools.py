@@ -3,6 +3,7 @@ import re
 import pickle
 import numpy as np
 import shutil
+import xml.etree.ElementTree as ET
 import GLM_Tools.PowerSystemModel as psm
 import GLM_Tools.parsing_tools as glm_parser
 
@@ -207,3 +208,65 @@ def create_subfeeder(substation_name, subfeeder_name, start_node_name, branches_
     if not os.path.exists(f"Feeder_Data/{new_substation_name}/Coordinate_Data/"):
         os.makedirs(f"Feeder_Data/{new_substation_name}/Coordinate_Data/")
     shutil.copy(f"Feeder_Data/{substation_name}/Coordinate_Data/{substation_name}_Branch_Coords.xls",f"Feeder_Data/{new_substation_name}/Coordinate_Data/{new_substation_name}_Branch_Coords.xls")
+
+def pull_line_impedances(root_dir, substation_name):
+    impedance_matrices = []
+    lengths = []
+    line_names = []
+
+    xml_file = root_dir + "/Feeder_Data/" + substation_name + "/Output_Data/impedance_dump.xml"
+    glm_file = root_dir + "/Feeder_Data/" + substation_name + "/Input_Data/" + substation_name + ".glm"
+
+    # Open and parse the XML file
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+
+    # Pull three-phase impedance matrix for every line (cables assumed to already have impedance matrices)
+    for line in root.findall('.//overhead_line'):
+        temp_impedance = np.zeros((3,3),dtype=complex)
+        for name in line.findall('.//name'):
+            line_names.append(name.text)
+        for b_matrix in line.findall('.//b_matrix'):
+            for b_entry in b_matrix:
+                row_ind = int(b_entry.tag[1]) - 1
+                col_ind = int(b_entry.tag[2]) - 1
+                temp_impedance[row_ind, col_ind] = b_entry.text
+        for l in line.findall('.//length'):
+            lengths.append(float(l.text))
+        impedance_matrices.append(temp_impedance)
+
+    # Convert line impedance matrices to configuration matrices in ohm/mile 
+    ft2mi = 1.0/5280.0
+    impedance_matrices_puLength = {}
+    for ii in range(len(lengths)):
+        impedance_matrices_puLength[line_names[ii]] = impedance_matrices[ii]/(lengths[ii]*ft2mi)
+
+    with open(glm_file, 'r') as file:
+        glm_data = file.read()
+
+    # Get number of configurations to initialize config_impedance_matrices
+    unique_configs = []
+    for obj in re.finditer(r"object (\S*) \{[^{}]*\}", glm_data, re.S):
+        obj_type = obj.group(1).strip('"')
+        if obj_type in ["line_configuration"]:
+            name = re.search(fr"line_configuration[0-9]+", obj.group(0), re.S)
+            if name not in unique_configs:
+                unique_configs.append(name)
+
+    num_configs = len(unique_configs)
+    config_impedance_matrices = np.zeros((num_configs, 3, 3), dtype=complex)
+
+    # Extract line configuration impedance matrices
+    for obj in re.finditer(r"object (\S*) \{[^{}]*\}", glm_data, re.S):
+        obj_type = obj.group(1).strip('"')
+        config_params = []
+        if obj_type in ["overhead_line"]:
+            line_string = obj.group(0)
+            name_match = re.search(r"name\s+([^\s][^;]*);", line_string, re.S)
+            config_match = re.search(r"configuration\s+([^\s][^;]*);", line_string, re.S)
+            name_match = re.search(r"name\s+([^\s][^;]*);", line_string, re.S)
+            config_ind = int(config_match.group(0)[32:-1])
+            z = impedance_matrices_puLength[name_match.group(0)[5:-1]]
+            config_impedance_matrices[config_ind] = np.copy(z)
+
+    return config_impedance_matrices

@@ -5,6 +5,7 @@ import csv
 import pandas as pd
 import numpy as np
 import GLM_Tools.PowerSystemModel as psm
+from GLM_Tools import modif_tools
 import pickle
 import matplotlib.pyplot as plt
 import warnings
@@ -287,7 +288,7 @@ def parse_shunt(shunt_type,shunt_string):
 
     return psm.Shunt(shunt_type,name,parent,phases,nom_volt,shunt_params,shunt_string)
 
-def parse_config(config_type,config_string):
+def parse_config(config_type,config_string,config_impedance_matrices):
 
     name_match = re.search(r"name\s+([^\s][^;]*);", config_string, re.S)
     if name_match:
@@ -299,15 +300,22 @@ def parse_config(config_type,config_string):
 
     if config_type in ["line_configuration"]:
         z_strs = ['11','12','13','21','22','23','31','32','33']
-        for z_str in z_strs:
-            z_match = re.search(fr"z{z_str}\s+([+-]?\d*\.\d+[+-]?\d*\.\d+j);", config_string, re.S)
-            if z_match:
-                z = complex(z_match.group(1))
-            else:
-                z = complex(1e-4,1e-4)
-                warnings.warn("WARNING: Need to implement conductor and line spacing parsing!")
-                # raise ValueError(f"Could not find z{z_str} of line config object: {config_string}")
-            config_params.append(z)
+        z_test = re.search(fr"z{'11'}\s+([+-]?\d*\.\d+[+-]?\d*\.\d+j);", config_string, re.S)
+        if z_test:
+            for z_str in z_strs:
+                z_match = re.search(fr"z{z_str}\s+([+-]?\d*\.\d+[+-]?\d*\.\d+j);", config_string, re.S)
+                if z_match:
+                    z = complex(z_match.group(1))
+                else:
+                    raise ValueError(f"Could not find z{z_str} of line config object: {config_string}")
+                config_params.append(z)
+        else:
+            ind_match = re.search(fr"line_configuration[0-9]+", config_string, re.S)
+            ind = int(ind_match.group(0)[18:])
+            for row in range(3):
+                for col in range(3):
+                    z = np.copy(config_impedance_matrices[ind][row, col])
+                    config_params.append(z)
 
     elif config_type in ["transformer_configuration"]:
         connect_type_match = re.search(r"connect_type\s+([^\s][^;]*);", config_string, re.S)
@@ -448,13 +456,13 @@ def parse_config(config_type,config_string):
     return psm.Config(config_type,name,config_params,config_string)
 
 
-def parse_glm_to_pkl(substation_name):
+def parse_glm_to_pkl(root_dir, substation_name):
 
-    glm_file_dir = f"Feeder_Data/{substation_name}/Input_Data/"
-    glm_file_name = f"{substation_name}_Helics.glm"
+    glm_file_dir = f"{root_dir}/Feeder_Data/{substation_name}/Input_Data/"
+    glm_file_name = f"{substation_name}.glm"
     glm_file = os.path.join(glm_file_dir,glm_file_name)
 
-    pkl_file_dir = f"Feeder_Data/{substation_name}/Python_Model/"
+    pkl_file_dir = f"{root_dir}/Feeder_Data/{substation_name}/Python_Model/"
     pkl_file_name = f"{substation_name}_Model.pkl"
     pkl_file = os.path.join(pkl_file_dir,pkl_file_name)
 
@@ -462,6 +470,9 @@ def parse_glm_to_pkl(substation_name):
 
     with open(glm_file, 'r') as file:
         glm_data = file.read()
+
+    # Get line impedance data
+    config_impedance_matrices = modif_tools.pull_line_impedances(root_dir, substation_name)
 
     # Parse GLM file
     first_obj = re.search(r"object (\S*) \{[^{}]*\}", glm_data, re.S)
@@ -513,7 +524,7 @@ def parse_glm_to_pkl(substation_name):
         elif obj_type in ["regulator_configuration", "transformer_configuration", "line_configuration"]:
             config_string = obj.group(0)
             config_objs.append(config_string)
-            Configs.append(parse_config(obj_type,config_string))
+            Configs.append(parse_config(obj_type,config_string, config_impedance_matrices))
         elif obj_type in ["helics_msg"]:
             helics_objs.append(obj.group(0))
         elif obj_type in ["voltdump", "currdump", "impedance_dump", "group_recorder", "recorder"]:
@@ -668,15 +679,15 @@ def populate_ami_loads_pkl(substation_name, start_date, end_date, load_fixed_pf)
         pickle.dump(pkl_model, file)
 
 
-def add_coords_to_pkl(substation_name):
+def add_coords_to_pkl(root_dir,substation_name):
 
     # Open pkl file
-    pkl_file = f"Feeder_Data/{substation_name}/Python_Model/{substation_name}_Model.pkl"
+    pkl_file = f"{root_dir}/Feeder_Data/{substation_name}/Python_Model/{substation_name}_Model.pkl"
     with open(pkl_file, 'rb') as file:
         pkl_model = pickle.load(file)
 
     # Open coordinate data files (from WindMil)
-    branch_coord_file = f"Feeder_Data/{substation_name}/Coordinate_Data/{substation_name}_Branch_Coords.xls"
+    branch_coord_file = f"{root_dir}/Feeder_Data/{substation_name}/Coordinate_Data/{substation_name}_Branch_Coords.xls"
     branch_coord_df = pd.read_excel(branch_coord_file)
 
     # find branch coordinates

@@ -3,7 +3,8 @@ import GLM_Tools.parsing_tools as glm_parser
 import GLM_Tools.modif_tools as glm_modif_tools
 import os
 
-substation_name = "South_Alburgh"
+root_dir = "C:/Users/egseg"
+substation_name = "Rochester"
 
 # Meter Number Dictionary Settings
 build_meter_dicts_flag = False # Set this to False if you already built these CSV files
@@ -21,7 +22,7 @@ parse_ami_data_flag = False
 parse_glm_flag = True
 
 # Create Simulation Settings
-create_new_sim_flag = True
+create_new_sim_flag = False
 sim_start_time = '2024-02-01 00:00:00'
 sim_end_time = '2024-02-08 00:00:00'
 ami_load_fixed_pf = 0.98
@@ -29,10 +30,10 @@ include_hc = False
 regulator_control = "MANUAL" # use "DEFAULT" to not change regulator controls
 
 # Optimization Settings
-add_ami_to_pkl_flag = True
+add_ami_to_pkl_flag = False
 
 # Visualization Settings
-add_coords_to_pkl_flag = True
+add_coords_to_pkl_flag = False
 
 #############################################################################################################
 
@@ -50,7 +51,7 @@ if parse_ami_data_flag:
     setup_tools.calculate_true_load(substation_name)
 
 if parse_glm_flag:
-    glm_parser.parse_glm_to_pkl(substation_name)
+    glm_parser.parse_glm_to_pkl(root_dir, substation_name)
 
 if create_new_sim_flag:
     # make sure the appropriate Output_Data folder exists
@@ -72,5 +73,5 @@ if add_ami_to_pkl_flag:
     glm_parser.populate_ami_loads_pkl(substation_name, sim_start_time, sim_end_time, ami_load_fixed_pf)
 
 if add_coords_to_pkl_flag:    
-    glm_parser.add_coords_to_pkl(substation_name)
+    glm_parser.add_coords_to_pkl(root_dir,substation_name)
     glm_parser.plot_feeder(substation_name)

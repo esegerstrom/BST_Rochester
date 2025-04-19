@@ -10,6 +10,7 @@ using Ipopt
 using LinearAlgebra
 using CSV
 using DataFrames
+include("modif_tools.jl")
 
 # Import Python modules
 pickle = pyimport("pickle")
@@ -17,8 +18,9 @@ pushfirst!(pyimport("sys")."path", "")
 pyimport("GLM_Tools")
 
 # Load the .pkl file 
-substation_name = "South_Alburgh"
-fname = "Feeder_Data/$(substation_name)/Python_Model/$(substation_name)_Model.pkl"
+root_directory = "C:/Users/egseg/"
+substation_name = "Rochester"
+fname = root_directory * "Feeder_Data/$(substation_name)/Python_Model/$(substation_name)_Model.pkl"
 pkl_file = open(fname, "r")
 psm = pickle.load(pkl_file)
 close(pkl_file)
@@ -82,7 +84,7 @@ end
 
 
 # Power Injection Constraints
-t_ind = 5
+t_ind = 1
 s_load = zeros(GenericQuadExpr{ComplexF64, VariableRef}, 3, n_nodes)
 for (ld_ind, Load) in enumerate(psm.Loads)
     if haskey(Load,"Sload")
@@ -120,13 +122,25 @@ end
 optimize!(model)
 
 ## Compare results to GLD
-gld_node_mags_A_df = CSV.File("Feeder_Data/$(substation_name)/Output_Data/node_voltage_mags_A.csv",skipto=10,header=9) |> DataFrame
-gld_node_mags_B_df = CSV.File("Feeder_Data/$(substation_name)/Output_Data/node_voltage_mags_B.csv",skipto=10,header=9) |> DataFrame
-gld_node_mags_C_df = CSV.File("Feeder_Data/$(substation_name)/Output_Data/node_voltage_mags_C.csv",skipto=10,header=9) |> DataFrame
+output_file_path = "$(root_directory)/Feeder_Data/$(substation_name)/Output_Data/"
+meter_test = "$(output_file_path)meter_voltage_mags_A.csv"
+if isfile(meter_test)
+    gld_node_mags_A_df = combine_node_and_meter_dumps(root_directory, substation_name, "voltage_mags_A")
+    gld_node_mags_B_df = combine_node_and_meter_dumps(root_directory, substation_name, "voltage_mags_B")
+    gld_node_mags_C_df = combine_node_and_meter_dumps(root_directory, substation_name, "voltage_mags_C")
 
-gld_node_angs_A_df = CSV.File("Feeder_Data/$(substation_name)/Output_Data/node_voltage_angs_A.csv",skipto=10,header=9) |> DataFrame
-gld_node_angs_B_df = CSV.File("Feeder_Data/$(substation_name)/Output_Data/node_voltage_angs_B.csv",skipto=10,header=9) |> DataFrame
-gld_node_angs_C_df = CSV.File("Feeder_Data/$(substation_name)/Output_Data/node_voltage_angs_C.csv",skipto=10,header=9) |> DataFrame
+    gld_node_angs_A_df = combine_node_and_meter_dumps(root_directory, substation_name, "voltage_angs_A")
+    gld_node_angs_B_df = combine_node_and_meter_dumps(root_directory, substation_name, "voltage_angs_B")
+    gld_node_angs_C_df = combine_node_and_meter_dumps(root_directory, substation_name, "voltage_angs_C")
+else
+    gld_node_mags_A_df = CSV.File(root_directory * "Feeder_Data/$(substation_name)/Output_Data/node_voltage_mags_A.csv",skipto=10,header=9) |> DataFrame
+    gld_node_mags_B_df = CSV.File(root_directory * "Feeder_Data/$(substation_name)/Output_Data/node_voltage_mags_B.csv",skipto=10,header=9) |> DataFrame
+    gld_node_mags_C_df = CSV.File(root_directory * "Feeder_Data/$(substation_name)/Output_Data/node_voltage_mags_C.csv",skipto=10,header=9) |> DataFrame
+
+    gld_node_angs_A_df = CSV.File(root_directory * "Feeder_Data/$(substation_name)/Output_Data/node_voltage_angs_A.csv",skipto=10,header=9) |> DataFrame
+    gld_node_angs_B_df = CSV.File(root_directory * "Feeder_Data/$(substation_name)/Output_Data/node_voltage_angs_B.csv",skipto=10,header=9) |> DataFrame
+    gld_node_angs_C_df = CSV.File(root_directory * "Feeder_Data/$(substation_name)/Output_Data/node_voltage_angs_C.csv",skipto=10,header=9) |> DataFrame
+end
 
 Vph_gld = zeros(ComplexF64, 3, n_nodes)
 for (nd_ind, Node) in enumerate(psm.Nodes)
