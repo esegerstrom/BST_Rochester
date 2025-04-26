@@ -18,6 +18,7 @@ pushfirst!(pyimport("sys")."path", "")
 pyimport("GLM_Tools")
 
 # Load the .pkl file 
+CYME_flag = 1
 root_directory = "C:/Users/egseg/"
 substation_name = "Rochester"
 fname = root_directory * "Feeder_Data/$(substation_name)/Python_Model/$(substation_name)_Model.pkl"
@@ -200,23 +201,102 @@ node_colors_a = [get(node_colormap,val) for val in norm_Vmag_out_a]
 node_colors_b = [get(node_colormap,val) for val in norm_Vmag_out_b]
 node_colors_c = [get(node_colormap,val) for val in norm_Vmag_out_c]
 
-vis_plt = plot(layout=grid(1,3, widths=(1/3,1/3,1/3)), size=(1200,300))
-for (br_ind,Branch) in enumerate(psm.Branches)
-    plot!([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color=:black,subplot=1)
-    plot!([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color=:black,subplot=2)
-    plot!([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color=:black,subplot=3)
+vis_plt = plot(layout=grid(1,3, widths=(1/3,1/3,1/3)), size=(1200,300), color=node_colormpa, colorbar=true)
+if CYME_flag != 1
+    for (br_ind,Branch) in enumerate(psm.Branches)
+        plot!([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color=:black,subplot=1)
+        plot!([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color=:black,subplot=2)
+        plot!([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color=:black,subplot=3)
+    end
+    for (nd_ind,Node) in enumerate(psm.Nodes)
+        if occursin("A",Node.phases)
+            plot!([Node.X_coord],[Node.Y_coord],seriestype=:scatter,color=node_colors_a[nd_ind],markersize=3,subplot=1)
+        end
+        if occursin("B",Node.phases)
+            plot!([Node.X_coord],[Node.Y_coord],seriestype=:scatter,color=node_colors_b[nd_ind],markersize=3,subplot=2)
+        end
+        if occursin("C",Node.phases)
+            plot!([Node.X_coord],[Node.Y_coord],seriestype=:scatter,color=node_colors_c[nd_ind],markersize=3,subplot=3)
+        end
+    end
+else
+    # Get indices of substation nodes 
+    node_file = joinpath(root_directory, "Feeder_Data", substation_name, "Coordinate_Data", "Nodes.csv")
+    nodes = CSV.read(node_file, DataFrame)
+    node_keys = names(nodes)
+    node_xs  = nodes[:, node_keys[5]]
+    substation_inds = findall(x -> x == minimum(node_xs), node_xs)
+
+    for (br_ind,Branch) in enumerate(psm.Branches)
+        branch_from_ind = split(Branch.from_node, "_")
+        branch_to_ind = split(Branch.to_node, "_")
+
+        for ii in 1:length(branch_from_ind)
+            if all(isdigit,branch_from_ind[ii])
+                branch_from_ind = branch_from_ind[ii:end]
+                break
+            end
+        end
+        for ii in 1:length(branch_to_ind)
+            if all(isdigit,branch_to_ind[ii])
+                branch_to_ind = branch_to_ind[ii:end]
+                break
+            end
+        end
+        # Only include nodes in plot if they are not substation nodes
+        include_branch = true
+        for x in branch_from_ind
+            if parse(Int, x)+1 in substation_inds
+                println("Excluded from_node index: ", x)
+                include_branch = false
+                break
+            end
+        end
+        for x in branch_to_ind
+            if parse(Int, x)+1 in substation_inds
+                println("Excluded to_node index: ", x)
+                include_branch = false
+                break
+            end
+        end
+        if include_branch
+            plot!(vis_plt[1], [Branch.X_coord[],Branch.X2_coord[]],[Branch.Y_coord[],Branch.Y2_coord[]],color=:black)
+            plot!(vis_plt[2], [Branch.X_coord[],Branch.X2_coord[]],[Branch.Y_coord[],Branch.Y2_coord[]],color=:black)
+            plot!(vis_plt[3], [Branch.X_coord[],Branch.X2_coord[]],[Branch.Y_coord[],Branch.Y2_coord[]],color=:black)
+        end
+    end
+
+    for (nd_ind,Node) in enumerate(psm.Nodes)
+        node_ind = split(Node.name, "_")
+        for ii in 1:length(node_ind)
+            if all(isdigit,node_ind[ii])
+                node_ind = node_ind[ii:end]
+                break
+            end
+        end
+        include_node = true
+        for x in node_ind
+            if parse(Int, x)+1 in substation_inds
+                println("Excluded node index: ", x)
+                include_node = false
+                break
+            end
+        end
+
+        if include_node
+            if occursin("A",Node.phases)
+                plot!(vis_plt[1], [Node.X_coord[]],[Node.Y_coord[]],seriestype=:scatter,color=node_colors_a[nd_ind],markersize=3)
+            end
+            if occursin("B",Node.phases)
+                plot!(vis_plt[2], [Node.X_coord[]],[Node.Y_coord[]],seriestype=:scatter,color=node_colors_b[nd_ind],markersize=3)
+            end
+            if occursin("C",Node.phases)
+                plot!(vis_plt[3], [Node.X_coord[]],[Node.Y_coord[]],seriestype=:scatter,color=node_colors_c[nd_ind],markersize=3)
+            end
+        end
+    end
 end
-for (nd_ind,Node) in enumerate(psm.Nodes)
-    if occursin("A",Node.phases)
-        plot!([Node.X_coord],[Node.Y_coord],seriestype=:scatter,color=node_colors_a[nd_ind],markersize=3,subplot=1)
-    end
-    if occursin("B",Node.phases)
-        plot!([Node.X_coord],[Node.Y_coord],seriestype=:scatter,color=node_colors_b[nd_ind],markersize=3,subplot=2)
-    end
-    if occursin("C",Node.phases)
-        plot!([Node.X_coord],[Node.Y_coord],seriestype=:scatter,color=node_colors_c[nd_ind],markersize=3,subplot=3)
-    end
-end
+
 plot!(title="Phase A",xformatter=:none,yformatter=:none,legend=:false,subplot=1)
 plot!(title="Phase B",xformatter=:none,yformatter=:none,legend=:false,subplot=2)
 plot!(title="Phase C",xformatter=:none,yformatter=:none,legend=:false,subplot=3)

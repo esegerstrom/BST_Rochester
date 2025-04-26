@@ -686,69 +686,150 @@ def add_coords_to_pkl(root_dir,substation_name):
     with open(pkl_file, 'rb') as file:
         pkl_model = pickle.load(file)
 
-    # Open coordinate data files (from WindMil)
+    # Check if GLD file is from WindMil or CYME
     branch_coord_file = f"{root_dir}/Feeder_Data/{substation_name}/Coordinate_Data/{substation_name}_Branch_Coords.xls"
-    branch_coord_df = pd.read_excel(branch_coord_file)
+    if os.path.isfile(branch_coord_file):
+        # Open coordinate data files (from WindMil)
+        branch_coord_df = pd.read_excel(branch_coord_file)
 
-    # find branch coordinates
-    fake_branches = []
-    for branch in pkl_model.Branches:
-        # skip fake branches for now
-        if branch.type == "fake":
-            fake_branches.append(branch.index)
-            continue
-        branch_name = branch.name
-        # catch special cases
-        if branch_name[0] == "_":
-            branch_name = branch_name[1:]  
-        if branch_name[-13:] == "_FakePhasesBC":
-            branch_name = branch_name[:-13]           
-        reg_match = re.search(r".*(volt_[0-9]*).*", branch_name, re.S)
-        if reg_match is not None:
-            branch_name = reg_match.group(1)
-        # find matching row in dataframe
-        match_df = branch_coord_df.loc[branch_coord_df['Element Name'] == branch_name]
-        if match_df.empty:
-            raise ValueError(f"Couldn't find match for branch: {branch_name}")
-        branch.X_coord = match_df['X Coordinate'].values[0]
-        branch.Y_coord = match_df['Y Coordinate'].values[0]
-        branch.X2_coord = match_df['X2 Coordinate'].values[0]
-        branch.Y2_coord = match_df['Y2 Coordinate'].values[0]
+        # find branch coordinates
+        fake_branches = []
+        for branch in pkl_model.Branches:
+            # skip fake branches for now
+            if branch.type == "fake":
+                fake_branches.append(branch.index)
+                continue
+            branch_name = branch.name
+            # catch special cases
+            if branch_name[0] == "_":
+                branch_name = branch_name[1:]  
+            if branch_name[-13:] == "_FakePhasesBC":
+                branch_name = branch_name[:-13]           
+            reg_match = re.search(r".*(volt_[0-9]*).*", branch_name, re.S)
+            if reg_match is not None:
+                branch_name = reg_match.group(1)
+            # find matching row in dataframe
+            match_df = branch_coord_df.loc[branch_coord_df['Element Name'] == branch_name]
+            if match_df.empty:
+                raise ValueError(f"Couldn't find match for branch: {branch_name}")
+            branch.X_coord = match_df['X Coordinate'].values[0]
+            branch.Y_coord = match_df['Y Coordinate'].values[0]
+            branch.X2_coord = match_df['X2 Coordinate'].values[0]
+            branch.Y2_coord = match_df['Y2 Coordinate'].values[0]
 
-        # get node coordinates
-        from_node = pkl_model.Nodes[branch.from_node_ind]
-        to_node = pkl_model.Nodes[branch.to_node_ind]
-        from_node.X_coord = branch.X2_coord
-        from_node.Y_coord = branch.Y2_coord
-        to_node.X_coord = branch.X_coord
-        to_node.Y_coord = branch.Y_coord
-
-    for branch_ind in fake_branches:
-        branch = pkl_model.Branches[branch_ind]
-        from_node = pkl_model.Nodes[branch.from_node_ind]
-        to_node = pkl_model.Nodes[branch.to_node_ind]
-        if hasattr(to_node,'X_coord'):
-            branch.X_coord = to_node.X_coord
-            branch.Y_coord = to_node.Y_coord
-        else:
-            branch.X_coord = from_node.X_coord
-            branch.Y_coord = from_node.Y_coord
+            # get node coordinates
+            from_node = pkl_model.Nodes[branch.from_node_ind]
+            to_node = pkl_model.Nodes[branch.to_node_ind]
+            from_node.X_coord = branch.X2_coord
+            from_node.Y_coord = branch.Y2_coord
             to_node.X_coord = branch.X_coord
             to_node.Y_coord = branch.Y_coord
-        branch.X2_coord = from_node.X_coord
-        branch.Y2_coord = from_node.Y_coord
+
+        for branch_ind in fake_branches:
+            branch = pkl_model.Branches[branch_ind]
+            from_node = pkl_model.Nodes[branch.from_node_ind]
+            to_node = pkl_model.Nodes[branch.to_node_ind]
+            if hasattr(to_node,'X_coord'):
+                branch.X_coord = to_node.X_coord
+                branch.Y_coord = to_node.Y_coord
+            else:
+                branch.X_coord = from_node.X_coord
+                branch.Y_coord = from_node.Y_coord
+                to_node.X_coord = branch.X_coord
+                to_node.Y_coord = branch.Y_coord
+            branch.X2_coord = from_node.X_coord
+            branch.Y2_coord = from_node.Y_coord
 
 
-    for load in pkl_model.Loads:
-        parent_node = pkl_model.Nodes[load.parent_node_ind]
-        load.X_coord = parent_node.X_coord
-        load.Y_coord = parent_node.Y_coord
+        for load in pkl_model.Loads:
+            parent_node = pkl_model.Nodes[load.parent_node_ind]
+            load.X_coord = parent_node.X_coord
+            load.Y_coord = parent_node.Y_coord
 
-    for gen in pkl_model.Generators:
-        parent_node = pkl_model.Nodes[gen.parent_node_ind]
-        gen.X_coord = parent_node.X_coord
-        gen.Y_coord = parent_node.Y_coord
+        for gen in pkl_model.Generators:
+            parent_node = pkl_model.Nodes[gen.parent_node_ind]
+            gen.X_coord = parent_node.X_coord
+            gen.Y_coord = parent_node.Y_coord
     
+    else:
+        # Get coordinate information (from CYME)
+        root_dir = "C:/Users/egseg"
+        substation_name = "Rochester"
+        file_path = f"{root_dir}/Feeder_Data/{substation_name}/Output_Data/"
+
+        node_file = f"{root_dir}/Feeder_Data/{substation_name}/Coordinate_Data/Nodes.csv"
+        section_file = f"{root_dir}/Feeder_Data/{substation_name}/Coordinate_Data/Sections.csv"
+
+        # Parse nodes for coordinates
+        nodes = pd.read_csv(node_file)
+        node_keys = [*nodes]
+        node_IDs = nodes[node_keys[0]]
+        node_xs  = nodes[node_keys[4]]
+        node_ys  = nodes[node_keys[5]]
+
+        # Parse sections for topology
+        sections = pd.read_csv(section_file)
+        section_keys = [*sections]
+        section_IDs = sections[section_keys[0]]
+        section_froms = sections[section_keys[2]]
+        section_tos = sections[section_keys[4]]
+
+        # find branch coordinates
+        for branch in pkl_model.Branches:
+            from_node = pkl_model.Nodes[branch.from_node_ind]
+            to_node = pkl_model.Nodes[branch.to_node_ind]
+            from_ind = from_node.name.split("_")
+            to_ind = to_node.name.split("_")
+            for ii in range(len(from_ind)):
+                if from_ind[ii].isnumeric():
+                    from_ind = np.copy(from_ind[ii:])
+                    break
+            for ii in range(len(to_ind)):
+                if to_ind[ii].isnumeric():
+                    to_ind = np.copy(to_ind[ii:])
+                    break
+                
+            if len(from_ind) == 1:
+                from_ind = int(from_ind[0])
+                x_coord = node_xs[from_ind]
+                y_coord = node_ys[from_ind]
+            else:
+                intermediate_from_ind = int(from_ind[0])
+                intermediate_to_ind = int(from_ind[1])
+                intermediate_from_x_coord = node_xs[intermediate_from_ind]
+                intermediate_from_y_coord = node_ys[intermediate_from_ind]
+                intermediate_to_x_coord = node_xs[intermediate_to_ind]
+                intermediate_to_y_coord = node_ys[intermediate_to_ind]
+                x_coord = (intermediate_from_x_coord + intermediate_to_x_coord)/2
+                y_coord = (intermediate_from_y_coord + intermediate_to_y_coord)/2
+
+            if len(to_ind) == 1:
+                to_ind = int(to_ind[0])
+                x2_coord = node_xs[to_ind]
+                y2_coord = node_ys[to_ind]
+            else:
+                intermediate_from_ind = int(to_ind[0])
+                intermediate_to_ind = int(to_ind[1])
+                intermediate_from_x2_coord = node_xs[intermediate_from_ind]
+                intermediate_from_y2_coord = node_ys[intermediate_from_ind]
+                intermediate_to_x2_coord = node_xs[intermediate_to_ind]
+                intermediate_to_y2_coord = node_ys[intermediate_to_ind]
+                x2_coord = (intermediate_from_x2_coord + intermediate_to_x2_coord)/2
+                y2_coord = (intermediate_from_y2_coord + intermediate_to_y2_coord)/2
+            
+            branch.X_coord = np.copy(x_coord)
+            branch.Y_coord = np.copy(y_coord)
+            branch.X2_coord = np.copy(x2_coord)
+            branch.Y2_coord = np.copy(y2_coord)
+
+            # get node coordinates
+            from_node = pkl_model.Nodes[branch.from_node_ind]
+            to_node = pkl_model.Nodes[branch.to_node_ind]
+            from_node.X_coord = branch.X2_coord
+            from_node.Y_coord = branch.Y2_coord
+            to_node.X_coord = branch.X_coord
+            to_node.Y_coord = branch.Y_coord
+
     # Save updated pkl file
     with open(pkl_file, 'wb') as file:
         pickle.dump(pkl_model, file)
@@ -769,6 +850,46 @@ def plot_feeder(substation_name):
         plt.plot(Load.X_coord,Load.Y_coord,'ro',markersize=5,markerfacecolor='none')
     for gen_ind, Generator in enumerate(pkl_model.Generators):
         plt.plot(Generator.X_coord,Generator.Y_coord,'go',markersize=5,markerfacecolor='none')
+    plt.show()
+
+def plot_CYME_feeder(root_dir, substation_name):
+
+    # Open pkl file
+    pkl_file = f"{root_dir}/Feeder_Data/{substation_name}/Python_Model/{substation_name}_Model.pkl"
+    with open(pkl_file, 'rb') as file:
+        pkl_model = pickle.load(file)
+
+    # Get indices of substation nodes 
+    node_file = f"{root_dir}/Feeder_Data/{substation_name}/Coordinate_Data/Nodes.csv"
+    nodes = pd.read_csv(node_file)
+    node_keys = [*nodes]
+    node_xs  = nodes[node_keys[4]]
+    substation_inds = np.where(node_xs == np.min(node_xs))[0]
+
+    for Branch in pkl_model.Branches:
+        branch_from_ind = Branch.from_node.split("_")
+        branch_to_ind = Branch.to_node.split("_")
+        for ii in range(len(branch_from_ind)):
+            if branch_from_ind[ii].isnumeric():
+                branch_from_ind = np.copy(branch_from_ind[ii:])
+                break
+        for ii in range(len(branch_to_ind)):
+            if branch_to_ind[ii].isnumeric():
+                branch_to_ind = np.copy(branch_to_ind[ii:])
+                break
+        # Only include nodes in plot if they are not substation nodes
+        if all(int(x) not in substation_inds for x in branch_from_ind) and all(int(x) not in substation_inds for x in branch_to_ind):
+            plt.plot([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color='black')
+
+    for Node in pkl_model.Nodes:
+        node_ind = Node.name.split("_")
+        for ii in range(len(node_ind)):
+            if node_ind[ii].isnumeric():
+                node_inds = np.copy(node_ind[ii:])
+                break
+        if all(int(x) not in substation_inds for x in node_inds):
+            plt.plot(Node.X_coord,Node.Y_coord,'b.',markersize=5)
+
     plt.show()
 
 def create_glm_from_pkl(pkl_file,glm_file):

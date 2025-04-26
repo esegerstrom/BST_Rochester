@@ -33,7 +33,8 @@ regulator_control = "MANUAL" # use "DEFAULT" to not change regulator controls
 add_ami_to_pkl_flag = False
 
 # Visualization Settings
-add_coords_to_pkl_flag = False
+add_coords_to_pkl_flag = True
+CYME_flag = True
 
 #############################################################################################################
 
@@ -74,4 +75,7 @@ if add_ami_to_pkl_flag:
 
 if add_coords_to_pkl_flag:    
     glm_parser.add_coords_to_pkl(root_dir,substation_name)
-    glm_parser.plot_feeder(substation_name)
+    if CYME_flag == 1:
+        glm_parser.plot_CYME_feeder(root_dir,substation_name)
+    else:
+        glm_parser.plot_feeder(substation_name)
