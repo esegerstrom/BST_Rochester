@@ -88,14 +88,16 @@ class PowerSystemModel:
             parent_node = self.Node_Dict[parent_name]
             load.parent_node_ind = parent_node.index
             # convert Sload to per unit
-            # load.Sload = load.Sload/self.Sbase_1ph
+            Sload = [load.constant_power_A, load.constant_power_B, load.constant_power_C]
+            load.Sload = np.array(Sload)/self.Sbase_1ph
 
         for gen in self.Generators:
             parent_name = gen.parent
             parent_node = self.Node_Dict[parent_name]
             gen.parent_node_ind = parent_node.index
             # convert Sgen to per unit
-            # load.Sgen = load.Sgen/self.Sbase_1ph
+            Sload = [gen.constant_power_A, gen.constant_power_B, gen.constant_power_C]
+            gen.Sload = np.array(Sload)/self.Sbase_1ph
 
         for shunt in self.Shunts:
             parent_name = shunt.parent

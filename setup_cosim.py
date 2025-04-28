@@ -4,7 +4,8 @@ import GLM_Tools.modif_tools as glm_modif_tools
 import os
 
 root_dir = "C:/Users/egseg"
-substation_name = "Rochester"
+substation_name = "Rochester_1_5"
+impedance_dump_name = "impedancedump_1_5"
 
 # Meter Number Dictionary Settings
 build_meter_dicts_flag = False # Set this to False if you already built these CSV files
@@ -52,7 +53,7 @@ if parse_ami_data_flag:
     setup_tools.calculate_true_load(substation_name)
 
 if parse_glm_flag:
-    glm_parser.parse_glm_to_pkl(root_dir, substation_name)
+    glm_parser.parse_glm_to_pkl(root_dir, substation_name, impedance_dump_name)
 
 if create_new_sim_flag:
     # make sure the appropriate Output_Data folder exists

@@ -166,7 +166,7 @@ def parse_load(load_string):
     load_params = []
 
     for ph in ["A","B","C"]:
-        constant_power_match = re.search(fr"constant_power_{ph}\s+([+-]?\d*\.\d+[+-]?\d*\.\d+j);", load_string, re.S)
+        constant_power_match = re.search(fr"constant_power_{ph}\s+([+-]?\d+(?:\.\d+)?[+-]\d+(?:\.\d+)?j);", load_string, re.S)
         if constant_power_match:
             constant_power = complex(constant_power_match.group(1))
         else:
@@ -204,7 +204,7 @@ def parse_generator(gen_string):
     gen_params = []
 
     for ph in ["A","B","C"]:
-        constant_power_match = re.search(fr"constant_power_{ph}\s+([+-]?\d*\.\d+[+-]?\d*\.\d+j);", gen_string, re.S)
+        constant_power_match = re.search(fr"constant_power_{ph}\s+([+-]?\d+(?:\.\d+)?[+-]\d+(?:\.\d+)?j);", gen_string, re.S)
         if constant_power_match:
             constant_power = complex(constant_power_match.group(1))
         else:
@@ -456,7 +456,7 @@ def parse_config(config_type,config_string,config_impedance_matrices):
     return psm.Config(config_type,name,config_params,config_string)
 
 
-def parse_glm_to_pkl(root_dir, substation_name):
+def parse_glm_to_pkl(root_dir, substation_name, impedance_dump_name):
 
     glm_file_dir = f"{root_dir}/Feeder_Data/{substation_name}/Input_Data/"
     glm_file_name = f"{substation_name}.glm"
@@ -472,7 +472,7 @@ def parse_glm_to_pkl(root_dir, substation_name):
         glm_data = file.read()
 
     # Get line impedance data
-    config_impedance_matrices = modif_tools.pull_line_impedances(root_dir, substation_name)
+    config_impedance_matrices = modif_tools.pull_line_impedances(root_dir, substation_name, impedance_dump_name)
 
     # Parse GLM file
     first_obj = re.search(r"object (\S*) \{[^{}]*\}", glm_data, re.S)
@@ -513,7 +513,7 @@ def parse_glm_to_pkl(root_dir, substation_name):
                 name = name_match.group(1)
             else:
                 raise ValueError(f"Could not find name of load object: {load_string}")
-            if "negLdGen" in name:
+            if "negLdGen" in name or "PV" in name:
                 Generators.append(parse_generator(load_string))
             else:
                 Loads.append(parse_load(load_string))

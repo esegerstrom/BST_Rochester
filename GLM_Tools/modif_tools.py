@@ -209,12 +209,12 @@ def create_subfeeder(substation_name, subfeeder_name, start_node_name, branches_
         os.makedirs(f"Feeder_Data/{new_substation_name}/Coordinate_Data/")
     shutil.copy(f"Feeder_Data/{substation_name}/Coordinate_Data/{substation_name}_Branch_Coords.xls",f"Feeder_Data/{new_substation_name}/Coordinate_Data/{new_substation_name}_Branch_Coords.xls")
 
-def pull_line_impedances(root_dir, substation_name):
+def pull_line_impedances(root_dir, substation_name, impedance_dump_name):
     impedance_matrices = []
     lengths = []
     line_names = []
 
-    xml_file = root_dir + "/Feeder_Data/" + substation_name + "/Output_Data/impedance_dump.xml"
+    xml_file = root_dir + "/Feeder_Data/" + substation_name + "/Output_Data/" + impedance_dump_name + ".xml"
     glm_file = root_dir + "/Feeder_Data/" + substation_name + "/Input_Data/" + substation_name + ".glm"
 
     # Open and parse the XML file

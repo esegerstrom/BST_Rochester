@@ -20,7 +20,7 @@ pyimport("GLM_Tools")
 # Load the .pkl file 
 CYME_flag = 1
 root_directory = "C:/Users/egseg/"
-substation_name = "Rochester"
+substation_name = "Rochester_1_5"
 fname = root_directory * "Feeder_Data/$(substation_name)/Python_Model/$(substation_name)_Model.pkl"
 pkl_file = open(fname, "r")
 psm = pickle.load(pkl_file)
@@ -35,7 +35,6 @@ V0_mag = 1
 V0_ref = V0_mag*[1,exp(-im*2*pi/3),exp(im*2*pi/3)]
 
 # Model Setup
-model = Model(Ipopt.Optimizer)
 model = Model(Ipopt.Optimizer)
 linear_solver = "mumps"
 if linear_solver in ["ma27","ma57","ma77","ma86","ma97"]
@@ -89,7 +88,8 @@ t_ind = 1
 s_load = zeros(GenericQuadExpr{ComplexF64, VariableRef}, 3, n_nodes)
 for (ld_ind, Load) in enumerate(psm.Loads)
     if haskey(Load,"Sload")
-        s_load[:,Load.parent_node_ind+1] += Load.Sload[t_ind,:]
+        #s_load[:,Load.parent_node_ind+1] += Load.Sload[t_ind,:]
+        s_load[:,Load.parent_node_ind+1] += Load.Sload
     end
 end
 s_gen = zeros(GenericQuadExpr{ComplexF64, VariableRef}, 3, n_nodes)
@@ -186,9 +186,12 @@ display(p3)
 node_Xcoords = [Node.X_coord for Node in psm.Nodes]
 node_Ycoords = [Node.Y_coord for Node in psm.Nodes]
 node_colormap = cgrad(:turbo)
+colorbar_title = "Voltage (p.u.)"
+#colorbar_ticks = 0.9:0.05:1.1
 Vph_mag = abs.(value.(Vph))
-Vmin = minimum(Vph_mag)
-Vmax = maximum(Vph_mag)
+Vmin = minimum([filter(!iszero, c) for c in eachcol(Vph_mag)])[1]
+Vmax = maximum(Vph_mag)[1]
+colorbar_ticks = Vmin:0.05:Vmax
 # Vmin = 0.95
 # Vmax = 1.05
 Vmag_out_a = Vph_mag[1,:]
@@ -201,7 +204,7 @@ node_colors_a = [get(node_colormap,val) for val in norm_Vmag_out_a]
 node_colors_b = [get(node_colormap,val) for val in norm_Vmag_out_b]
 node_colors_c = [get(node_colormap,val) for val in norm_Vmag_out_c]
 
-vis_plt = plot(layout=grid(1,3, widths=(1/3,1/3,1/3)), size=(1200,300), color=node_colormpa, colorbar=true)
+vis_plt = plot(layout=grid(1,3, widths=(1/3,1/3,1/3)), size=(1200,300))
 if CYME_flag != 1
     for (br_ind,Branch) in enumerate(psm.Branches)
         plot!([Branch.X_coord,Branch.X2_coord],[Branch.Y_coord,Branch.Y2_coord],color=:black,subplot=1)
@@ -285,13 +288,37 @@ else
 
         if include_node
             if occursin("A",Node.phases)
-                plot!(vis_plt[1], [Node.X_coord[]],[Node.Y_coord[]],seriestype=:scatter,color=node_colors_a[nd_ind],markersize=3)
+                plot!(vis_plt[1], [Node.X_coord[]],[Node.Y_coord[]],
+                        seriestype=:scatter,
+                        marker_z=Vmag_out_a[nd_ind],  # Use unnormalized voltage magnitude
+                        color=node_colormap,
+                        clims=(Vmin, Vmax),
+                        colorbar=false,
+                        colorbar_title = colorbar_title,
+                        colorbar_ticks = colorbar_ticks,
+                        markersize=3)
             end
             if occursin("B",Node.phases)
-                plot!(vis_plt[2], [Node.X_coord[]],[Node.Y_coord[]],seriestype=:scatter,color=node_colors_b[nd_ind],markersize=3)
+                plot!(vis_plt[2], [Node.X_coord[]],[Node.Y_coord[]],
+                        seriestype=:scatter,
+                        marker_z=Vmag_out_b[nd_ind],  # Use unnormalized voltage magnitude
+                        color=node_colormap,
+                        clims=(Vmin, Vmax),
+                        colorbar=false,
+                        colorbar_title = colorbar_title,
+                        colorbar_ticks = colorbar_ticks,
+                        markersize=3)
             end
             if occursin("C",Node.phases)
-                plot!(vis_plt[3], [Node.X_coord[]],[Node.Y_coord[]],seriestype=:scatter,color=node_colors_c[nd_ind],markersize=3)
+                plot!(vis_plt[3], [Node.X_coord[]],[Node.Y_coord[]],
+                        seriestype=:scatter,
+                        marker_z=Vmag_out_c[nd_ind],  # Use unnormalized voltage magnitude
+                        color=node_colormap,
+                        clims=(Vmin, Vmax),
+                        colorbar=true,
+                        colorbar_title = colorbar_title,
+                        colorbar_ticks = colorbar_ticks,
+                        markersize=3)
             end
         end
     end
