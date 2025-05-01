@@ -96,8 +96,8 @@ class PowerSystemModel:
             parent_node = self.Node_Dict[parent_name]
             gen.parent_node_ind = parent_node.index
             # convert Sgen to per unit
-            Sload = [gen.constant_power_A, gen.constant_power_B, gen.constant_power_C]
-            gen.Sload = np.array(Sload)/self.Sbase_1ph
+            Sgen = [gen.constant_power_A, gen.constant_power_B, gen.constant_power_C]
+            gen.Sgen = np.array(Sgen)/self.Sbase_1ph
 
         for shunt in self.Shunts:
             parent_name = shunt.parent
@@ -400,7 +400,9 @@ class Config:
             self.secondary_voltage = params[4] 
             self.resistance = params[5] # in pu
             self.reactance = params[6] # in pu
-            
+        
+        #elif self.type in ["regulator_configuration"]:
+
 
     def __repr__(self):
         return f"Config(type={self.type},name={self.name})"

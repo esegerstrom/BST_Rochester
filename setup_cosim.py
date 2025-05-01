@@ -4,8 +4,8 @@ import GLM_Tools.modif_tools as glm_modif_tools
 import os
 
 root_dir = "C:/Users/egseg"
-substation_name = "Rochester_1_5"
-impedance_dump_name = "impedancedump_1_5"
+substation_name = "Rochester_1"
+impedance_dump_name = "impedancedump_1"
 
 # Meter Number Dictionary Settings
 build_meter_dicts_flag = False # Set this to False if you already built these CSV files

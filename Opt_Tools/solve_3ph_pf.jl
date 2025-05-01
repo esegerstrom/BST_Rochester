@@ -19,8 +19,10 @@ pyimport("GLM_Tools")
 
 # Load the .pkl file 
 CYME_flag = 1
-root_directory = "C:/Users/egseg/"
-substation_name = "Rochester_1_5"
+#root_directory = "C:/Users/egseg/"
+#substation_name = "Rochester_1_N_test"
+root_directory = "./"
+substation_name = "South_Alburgh"
 fname = root_directory * "Feeder_Data/$(substation_name)/Python_Model/$(substation_name)_Model.pkl"
 pkl_file = open(fname, "r")
 psm = pickle.load(pkl_file)
@@ -45,6 +47,7 @@ elseif linear_solver == "mumps"
 else
     throw(ArgumentError("linear_solver $linear_solver not supported."))
 end
+
 
 # Variable Definitions
 @variable(model, Vph_real[ph=1:3,1:n_nodes], start=real(V0_ref[ph]*exp(-im*pi/6)))
@@ -88,14 +91,15 @@ t_ind = 1
 s_load = zeros(GenericQuadExpr{ComplexF64, VariableRef}, 3, n_nodes)
 for (ld_ind, Load) in enumerate(psm.Loads)
     if haskey(Load,"Sload")
-        #s_load[:,Load.parent_node_ind+1] += Load.Sload[t_ind,:]
-        s_load[:,Load.parent_node_ind+1] += Load.Sload
+        s_load[:,Load.parent_node_ind+1] += Load.Sload[t_ind,:]
+        #s_load[:,Load.parent_node_ind+1] += Load.Sload
     end
 end
 s_gen = zeros(GenericQuadExpr{ComplexF64, VariableRef}, 3, n_nodes)
 for (gen_ind, Gen) in enumerate(psm.Generators)
     if haskey(Gen,"Sgen")
         s_gen[:,Gen.parent_node_ind+1] += Gen.Sgen[t_ind,:]
+        #s_gen[:,Gen.parent_node_ind+1] += Gen.Sgen
     end
 end
 for (sht_ind, Shunt) in enumerate(psm.Shunts)

@@ -54,11 +54,11 @@ def modify_reg_controls(substation_name,regulator_control):
         file.write(new_glm_data)
 
 
-def create_subfeeder(substation_name, subfeeder_name, start_node_name, branches_to_remove):
+def create_subfeeder(root_dir, substation_name, subfeeder_name, CYME_flag, start_node_name, branches_to_remove):
 
     new_substation_name = f"{substation_name}_{subfeeder_name}"
 
-    pkl_file_dir = f"Feeder_Data/{substation_name}/Python_Model/"
+    pkl_file_dir = f"{root_dir}/Feeder_Data/{substation_name}/Python_Model/"
     pkl_file_name = f"{substation_name}_Model.pkl"
     pkl_file = os.path.join(pkl_file_dir,pkl_file_name)
 
@@ -179,7 +179,7 @@ def create_subfeeder(substation_name, subfeeder_name, start_node_name, branches_
     
 
     # Save the new power system model to a .pkl
-    new_pkl_file_dir = f"Feeder_Data/{new_substation_name}/Python_Model/"
+    new_pkl_file_dir = f"{root_dir}/Feeder_Data/{new_substation_name}/Python_Model/"
     new_pkl_file_name = f"{new_substation_name}_Model.pkl"
     new_pkl_file = os.path.join(new_pkl_file_dir,new_pkl_file_name)
     if not os.path.exists(new_pkl_file_dir):
@@ -188,8 +188,8 @@ def create_subfeeder(substation_name, subfeeder_name, start_node_name, branches_
         pickle.dump(New_Model, file)
 
     # write a glm file for the new model
-    new_glm_file_dir = f"Feeder_Data/{new_substation_name}/Input_Data/"
-    new_glm_file_name = f"{new_substation_name}_Helics.glm"
+    new_glm_file_dir = f"{root_dir}/Feeder_Data/{new_substation_name}/Input_Data/"
+    new_glm_file_name = f"{new_substation_name}.glm"
     new_glm_file = os.path.join(new_glm_file_dir,new_glm_file_name)
 
     if not os.path.exists(new_glm_file_dir):
@@ -199,15 +199,16 @@ def create_subfeeder(substation_name, subfeeder_name, start_node_name, branches_
     print(f"Created a new subfeeder ({subfeeder_name}) for {substation_name}. Python model saved to {new_pkl_file}. GridLAB-D model saved to {new_glm_file}")
 
     # copy over the files we need to run the simulation
-    shutil.copy(f"Feeder_Data/{substation_name}/meter_number_data.csv",f"Feeder_Data/{new_substation_name}/")
-    shutil.copy(f"Feeder_Data/{substation_name}/gen_meter_number_data.csv",f"Feeder_Data/{new_substation_name}/")
-    if not os.path.exists(f"Feeder_Data/{new_substation_name}/AMI_Data/"):
-        os.makedirs(f"Feeder_Data/{new_substation_name}/AMI_Data/")
-    shutil.copy(f"Feeder_Data/{substation_name}/AMI_Data/{substation_name}_True_Load_AMI_Data.csv",f"Feeder_Data/{new_substation_name}/AMI_Data/{new_substation_name}_True_Load_AMI_Data.csv")
-    shutil.copy(f"Feeder_Data/{substation_name}/AMI_Data/{substation_name}_True_Gen_AMI_Data.csv",f"Feeder_Data/{new_substation_name}/AMI_Data/{new_substation_name}_True_Gen_AMI_Data.csv")
-    if not os.path.exists(f"Feeder_Data/{new_substation_name}/Coordinate_Data/"):
-        os.makedirs(f"Feeder_Data/{new_substation_name}/Coordinate_Data/")
-    shutil.copy(f"Feeder_Data/{substation_name}/Coordinate_Data/{substation_name}_Branch_Coords.xls",f"Feeder_Data/{new_substation_name}/Coordinate_Data/{new_substation_name}_Branch_Coords.xls")
+    if CYME_flag != 1:
+        shutil.copy(f"Feeder_Data/{substation_name}/meter_number_data.csv",f"Feeder_Data/{new_substation_name}/")
+        shutil.copy(f"Feeder_Data/{substation_name}/gen_meter_number_data.csv",f"Feeder_Data/{new_substation_name}/")
+        if not os.path.exists(f"Feeder_Data/{new_substation_name}/AMI_Data/"):
+            os.makedirs(f"Feeder_Data/{new_substation_name}/AMI_Data/")
+        shutil.copy(f"Feeder_Data/{substation_name}/AMI_Data/{substation_name}_True_Load_AMI_Data.csv",f"Feeder_Data/{new_substation_name}/AMI_Data/{new_substation_name}_True_Load_AMI_Data.csv")
+        shutil.copy(f"Feeder_Data/{substation_name}/AMI_Data/{substation_name}_True_Gen_AMI_Data.csv",f"Feeder_Data/{new_substation_name}/AMI_Data/{new_substation_name}_True_Gen_AMI_Data.csv")
+        if not os.path.exists(f"Feeder_Data/{new_substation_name}/Coordinate_Data/"):
+            os.makedirs(f"Feeder_Data/{new_substation_name}/Coordinate_Data/")
+        shutil.copy(f"Feeder_Data/{substation_name}/Coordinate_Data/{substation_name}_Branch_Coords.xls",f"Feeder_Data/{new_substation_name}/Coordinate_Data/{new_substation_name}_Branch_Coords.xls")
 
 def pull_line_impedances(root_dir, substation_name, impedance_dump_name):
     impedance_matrices = []
