@@ -19,10 +19,10 @@ pyimport("GLM_Tools")
 
 # Load the .pkl file 
 CYME_flag = 1
-#root_directory = "C:/Users/egseg/"
-#substation_name = "Rochester_1_N_test"
-root_directory = "./"
-substation_name = "South_Alburgh"
+root_directory = "C:/Users/egseg/"
+substation_name = "Rochester_1"
+#root_directory = "./"
+#substation_name = "South_Alburgh"
 fname = root_directory * "Feeder_Data/$(substation_name)/Python_Model/$(substation_name)_Model.pkl"
 pkl_file = open(fname, "r")
 psm = pickle.load(pkl_file)
